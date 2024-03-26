@@ -14,21 +14,28 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ActiveProfiles("test")
@@ -53,11 +60,22 @@ public class ProdutoServiceTest {
     private static final String PRODUTO_TELEVISAO_MARCA = "LG";
     private static final String CARACTERISTICA_NOME = "Dimensao:";
     private static final String CARACTERISTICA_DESCRICAO = "Largura: 1m Altura: 80cm. Profundidade: 60cm";
-    private static final Long PRODUTO_GUARDA_ROUPA_ID = 1L;
+    private static final Long CARACTERISTICA_ID = 1L;
+    private static final Long PRODUTO_GUARDA_ROUPA_ID = 10L;
 
     @Test
     @DisplayName("Deve cadastrar produto")
-    public void deveCadastrarProduto() {
+    public void deveCadastrarProduto() throws IOException {
+        byte[] imgGuardaRoupa = "guardaRoupa.jpg".getBytes();
+
+        String img = Base64.getEncoder().encodeToString(imgGuardaRoupa);
+
+        MultipartFile formatoImgAceito = new MockMultipartFile(
+            "imagem",
+            "guardaRupa.jpg",
+            "guardaRoupa/jpeg",
+            imgGuardaRoupa);
+
         CaracteristicaRequest caracteristicaRequest = CaracteristicaRequest.builder()
             .nome(CARACTERISTICA_NOME)
             .descricao(CARACTERISTICA_DESCRICAO)
@@ -79,6 +97,7 @@ public class ProdutoServiceTest {
             .descricao(PRODUTO_GUARDA_ROUPA_DESCRICAO)
             .preco(PRODUTO_GUARDA_ROUPA_PRECO)
             .marca(PRODUTO_GUARDA_ROUPA_MARCA)
+            .imagem(img)
             .build();
 
         List<CaracteristicaRequest> caracteristicasProduto = produto.getCaracteristicas();
@@ -96,7 +115,7 @@ public class ProdutoServiceTest {
 
         when(produtoRepository.save(ArgumentMatchers.any())).thenReturn(guardaRoupa);
 
-        ProdutoResponse guardaRoupaResponse = produtoService.cadastrar(produto);
+        ProdutoResponse guardaRoupaResponse = produtoService.cadastrar(produto, formatoImgAceito);
 
         assertEquals(1L, guardaRoupaResponse.getId().longValue());
         assertEquals(PRODUTO_GUARDA_ROUPA_NOME, guardaRoupaResponse.getNome());
@@ -106,6 +125,7 @@ public class ProdutoServiceTest {
         assertEquals(1, guardaRoupaResponse.getCaracteristicas().size());
         assertEquals(CARACTERISTICA_NOME, guardaRoupaResponse.getCaracteristicas().get(0).getNome());
         assertEquals(CARACTERISTICA_DESCRICAO, guardaRoupaResponse.getCaracteristicas().get(0).getDescricao());
+        assertArrayEquals(formatoImgAceito.getBytes(), imgGuardaRoupa);
     }
 
     @Test
@@ -186,6 +206,7 @@ public class ProdutoServiceTest {
             .marca(PRODUTO_GUARDA_ROUPA_MARCA)
             .caracteristica(Collections.singletonList(
                 Caracteristica.builder()
+                    .id(CARACTERISTICA_ID)
                     .nome(CARACTERISTICA_NOME)
                     .descricao(CARACTERISTICA_DESCRICAO)
                     .build()
@@ -203,6 +224,7 @@ public class ProdutoServiceTest {
         assertEquals(PRODUTO_GUARDA_ROUPA_PRECO, guardaRoupaResponse.getPreco());
         assertEquals(PRODUTO_GUARDA_ROUPA_MARCA, guardaRoupaResponse.getMarca());
         assertEquals(1, guardaRoupaResponse.getCaracteristicas().size());
+        assertEquals(CARACTERISTICA_ID, guardaRoupaResponse.getCaracteristicas().get(0).getId());
         assertEquals(CARACTERISTICA_NOME, guardaRoupaResponse.getCaracteristicas().get(0).getNome());
         assertEquals(CARACTERISTICA_DESCRICAO, guardaRoupaResponse.getCaracteristicas().get(0).getDescricao());
     }

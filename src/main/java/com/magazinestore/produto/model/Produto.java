@@ -35,4 +35,5 @@ public class Produto {
     @OneToMany(mappedBy = "produto", cascade = CascadeType.ALL)
     private List<Caracteristica> caracteristica;
 
+    private String imagem;
 }

@@ -8,9 +8,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,8 +19,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -39,9 +42,10 @@ public class ProdutoController {
             @ApiResponse(responseCode = "400", description = "Requisição inválida")
         }
     )
-    @PostMapping
-    public ResponseEntity<ProdutoResponse> cadastrar(@RequestBody @Valid ProdutoRequest produtoRequest) {
-        ProdutoResponse produtoResponse = produtoService.cadastrar(produtoRequest);
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ProdutoResponse> cadastrar(@RequestPart("produtoRequest") ProdutoRequest produtoRequest,
+                                                     @RequestParam(value = "imagem") MultipartFile imagem) throws IOException {
+        ProdutoResponse produtoResponse = produtoService.cadastrar(produtoRequest, imagem);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(produtoResponse);
     }
@@ -73,7 +77,7 @@ public class ProdutoController {
     }
 
     @Operation(
-        summary="Retorna produto dado nome ou descrição",
+        summary = "Retorna produto dado nome ou descrição",
         description = "Retorna o produto com base no nome ou descrição fornecido"
     )
     @ApiResponses(value = {
@@ -98,7 +102,7 @@ public class ProdutoController {
     })
     @PutMapping("/{produtoId}")
     public ResponseEntity<ProdutoResponse> atualizar(@PathVariable Long produtoId, @RequestBody ProdutoRequest
-    produtoRequest){
+        produtoRequest) {
         produtoService.atualizar(produtoId, produtoRequest);
 
         return ResponseEntity.noContent().build();
